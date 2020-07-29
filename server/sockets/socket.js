@@ -23,7 +23,12 @@ io.on('connection', (client)=>{
 
         client.broadcast.to(data.sala).emit('conectados', usuariosConectados);
 
-        callback(respuesta)
+        client.broadcast.to(data.sala).emit('entrando', data.nombre);
+
+        callback({
+            nombre: respuesta.persona.nombre,
+            conectados: usuariosConectados
+        })
 
     })
 
@@ -31,12 +36,11 @@ io.on('connection', (client)=>{
     client.on('disconnect', function(){
 
         let personaBorrada = usuarios.borrarPersona(client.id);
+        let msg = crearMensaje('Admin', `${personaBorrada.borrado.nombre} salio de la sala`)
 
         console.log(personaBorrada.borrado.nombre + ' se ha desconectado de la sala ' + personaBorrada.borrado.sala);
 
-        client.broadcast.to(personaBorrada.borrado.sala).emit('desconexion', {
-            msg: `${personaBorrada.borrado.nombre} salio de la sala`
-        })
+        client.broadcast.to(personaBorrada.borrado.sala).emit('desconexion', msg );
 
         client.broadcast.to(personaBorrada.borrado.sala).emit('genteConectada', usuarios.getPersonasPorSala(personaBorrada.borrado.sala));
 
@@ -53,13 +57,17 @@ io.on('connection', (client)=>{
     })
 
     // mensaje a todos
-    client.on('mensaje', function(data){
+    client.on('mensaje', function(data, callback){
         
         let persona = usuarios.getPersonaPorId(client.id);
 
-        let mensaje = crearMensaje(persona.nombre, data.mensaje);
+        let mensaje = crearMensaje(persona.nombre, data);
 
         client.broadcast.to(persona.sala).emit('mensaje', mensaje); 
+
+        //console.log(mensaje);
+
+        callback(mensaje);
 
     })
 
